@@ -12,6 +12,9 @@ my $post_diag;
 $modules{$_} = $_ for qw(
   Alien::Base
   ExtUtils::MakeMaker
+  File::ShareDir
+  File::Spec
+  JSON::PP
   Test::More
 );
 

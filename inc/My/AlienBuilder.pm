@@ -1,5 +1,8 @@
 package inc::My::AlienBuilder;
 
+# The intent is for this module to turn into a generic interface
+# that can be submitted to CPAN as Dist::Zilla::Plugin::AlienBuilder
+
 use strict;
 use warnings;
 
@@ -7,6 +10,26 @@ use Moose;
 use List::Util qw( first );
 with 'Dist::Zilla::Role::InstallTool';
 with 'Dist::Zilla::Role::AfterBuild';
+
+has $_ => ( is => 'ro', isa => 'Bool' )
+  for qw( arch autoconf_with_pic dest_dir isolate_dynamic msys );
+
+has $_ => ( is => 'ro', isa => 'Str' )
+  for qw( name build_dir extractor ffi_name interpolator provides_cflags provides_libs retriever_class version_check );
+
+has $_ => ( is => 'ro', isa => 'ArrayRef[Str]' )
+  for qw( build_commands install_commands test_commands );
+
+# TODO: bin_requires
+# TODO: env
+# TODO: helper
+# TODO: inline_auto_include
+# TODO: retriever
+
+around mvp_multivalue_args => sub {
+  my($orig, $self) = @_;
+  return ($self->$orig, qw( build_commands install_commands test_commands ));
+};
 
 sub after_build
 {
@@ -44,11 +67,23 @@ sub setup_installer
 sub builder_args
 {
   my($self) = @_;
-  
-  return {
+
+  my %args = (
     dist_name => $self->zilla->name,
     retriever => [ "http://ftp.gnu.org/gnu/libmicrohttpd/" => { pattern => '^libmicrohttpd-.*\.tar\.gz$' } ],
+  );
+  
+  foreach my $accessor (map { $_->name } __PACKAGE__->meta->get_all_attributes)
+  {
+    # TODO: can we get more meta on this?  What happens
+    # if generic plugin attributes get added?
+    next if $accessor =~ /^(logger|zilla|plugin_name)$/;
+    my $value = $self->$accessor;
+    next unless defined $value;
+    $args{$accessor} = $value;
   }
+  
+  \%args;
 }
 
 sub _dump_as
