@@ -13,12 +13,19 @@ $modules{$_} = $_ for qw(
   Alien::Base
   ExtUtils::MakeMaker
   File::ShareDir
-  File::Spec
   JSON::PP
   Test::More
 );
 
-
+$post_diag = sub {
+  eval {
+    require Alien::Libmicrohttpd;
+    my $alien = 'Alien::Libmicrohttpd';
+    diag "cflags: @{[ $alien->cflags ]}";
+    diag "libs:   @{[ $alien->libs ]}";
+    1;
+  } || warn $@;
+};
 
 my @modules = sort keys %modules;
 
