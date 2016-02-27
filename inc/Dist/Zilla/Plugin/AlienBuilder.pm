@@ -1,4 +1,4 @@
-package inc::My::AlienBuilder;
+package Dist::Zilla::Plugin::AlienBuilder;
 
 # The intent is for this module to turn into a generic interface
 # that can be submitted to CPAN as Dist::Zilla::Plugin::AlienBuilder
