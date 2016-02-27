@@ -14,7 +14,9 @@ $modules{$_} = $_ for qw(
   ExtUtils::MakeMaker
   File::ShareDir
   JSON::PP
+  Test::Alien
   Test::More
+  Test::Stream
 );
 
 $post_diag = sub {
@@ -23,6 +25,7 @@ $post_diag = sub {
     my $alien = 'Alien::Libmicrohttpd';
     diag "cflags: @{[ $alien->cflags ]}";
     diag "libs:   @{[ $alien->libs ]}";
+    diag "dlls:   @{[ $alien->dynamic_libs ]}";
     1;
   } || warn $@;
 };
