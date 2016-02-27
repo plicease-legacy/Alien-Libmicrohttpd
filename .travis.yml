@@ -9,8 +9,8 @@ addons:
 install:
   - perlbrew list
   - bash corpus/install_alien_builder
-  - dzil authordeps --missing | cpanm -n
-  - dzil listdeps   --missing | cpanm -n
+  - dzil -Iinc authordeps --missing | cpanm -n
+  - dzil -Iinc listdeps   --missing | cpanm -n
 
 perl:
   - "5.8"
@@ -23,7 +23,7 @@ perl:
   - "5.22"
 
 script:
-  - dzil test -v
+  - dzil -Iinc test -v
 
 env:
   - ALIEN_INSTALL_TYPE=system

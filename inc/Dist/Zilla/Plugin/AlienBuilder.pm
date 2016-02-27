@@ -118,6 +118,7 @@ __DATA__
 
 # begin inserted by {{ blessed $self }} {{ $self->VERSION || 'dev' }}
 {{ $self->ab_class ne 'Alien::Builder::MM' ? 'use lib "inc"' : '' }}
+use {{ $self->ab_class }};
 my {{ $self->_dump_as($self->builder_args, '*AlienBuilderArgs') }}
 my $ab = {{ $self->ab_class }}->new(%AlienBuilderArgs);
 %WriteMakefileArgs = $ab->mm_args(%WriteMakefileArgs);
