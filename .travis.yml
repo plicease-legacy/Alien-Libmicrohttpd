@@ -4,7 +4,7 @@ sudo: false
 addons:
   apt:
     packages:
-      libmicrohttpd-dev
+      - libmicrohttpd-dev
 
 install:
   - perlbrew list
