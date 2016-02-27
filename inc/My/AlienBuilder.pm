@@ -10,6 +10,9 @@ use Moose;
 use List::Util qw( first );
 with 'Dist::Zilla::Role::InstallTool';
 with 'Dist::Zilla::Role::AfterBuild';
+with 'Dist::Zilla::Role::MetaProvider';
+
+has ab_class => ( is => 'ro', isa => 'Str', default => 'Alien::Builder::MM' );
 
 has $_ => ( is => 'ro', isa => 'Bool' )
   for qw( arch autoconf_with_pic dest_dir isolate_dynamic msys );
@@ -77,13 +80,19 @@ sub builder_args
   {
     # TODO: can we get more meta on this?  What happens
     # if generic plugin attributes get added?
-    next if $accessor =~ /^(logger|zilla|plugin_name)$/;
+    next if $accessor =~ /^(logger|zilla|plugin_name|ab_class)$/;
     my $value = $self->$accessor;
     next unless defined $value;
     $args{$accessor} = $value;
   }
   
   \%args;
+}
+
+sub metadata
+{
+  my($self) = @_;
+  { dynamic_config => 1 };
 }
 
 sub _dump_as
@@ -102,9 +111,10 @@ sub _alien_builder_mm_args
   my($self) = @_;
   
   (
-    'use Alien::Builder::MM;',
+    "use lib 'inc';",
+    "use @{[ $self->ab_class ]};",
     'my ' . $self->_dump_as($self->builder_args, '*AlienBuilderArgs'),
-    'my $ab = Alien::Builder::MM->new(%AlienBuilderArgs);',
+    "my \$ab = @{[ $self->ab_class ]}->new(\%AlienBuilderArgs);",
     '%WriteMakefileArgs = $ab->mm_args(%WriteMakefileArgs);',
     'my %AlienBuildRequires = %{ (do { my %h = $ab->mm_args; \%h })->{BUILD_REQUIRES} };',
     '$FallbackPrereqs{$_} = $AlienBuildRequires{$_} for keys %AlienBuildRequires;',
@@ -122,3 +132,4 @@ sub _alien_builder_mm_postamble
 }
 
 1;
+
