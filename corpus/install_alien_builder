@@ -2,5 +2,5 @@
 rm -rf /tmp/Alien-Builder && \
 git clone --depth 2 https://github.com/plicease/Alien-Builder.git /tmp/Alien-Builder && \
 cd /tmp/Alien-Builder  && \
-dzil authordeps --missing | cpanm -n && \
+dzil authordeps --missing | grep -v Alien::FTP | cpanm -n && \
 dzil install --install-command 'cpanm -n .'
