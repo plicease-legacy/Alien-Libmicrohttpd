@@ -11,6 +11,7 @@ use List::Util qw( first );
 with 'Dist::Zilla::Role::InstallTool';
 with 'Dist::Zilla::Role::AfterBuild';
 with 'Dist::Zilla::Role::MetaProvider';
+with 'Dist::Zilla::Role::TextTemplate';
 
 has ab_class => ( is => 'ro', isa => 'Str', default => 'Alien::Builder::MM' );
 
@@ -54,15 +55,12 @@ sub setup_installer
     unless $content =~ /my %FallbackPrereqs = \((?:\n[^;]+^)?\);$/mg;
     
   my $pos = pos($content);
-  
-  $content = substr($content, 0, $pos) . 
-    "\n\n" .
-    "# inserted by " . blessed($self) . ' ' . ($self->VERSION||'dev') . "\n" .
-    join("\n", $self->_alien_builder_mm_args) . "\n" .
-    substr($content, $pos) .
-    "\n\n" .
-    "# inserted by " . blessed($self) . ' ' . ($self->VERSION||'dev') . "\n" .
-    join("\n", $self->_alien_builder_mm_postamble);
+
+  $content = $self->fill_in_string($self->template, {
+    before => substr($content, 0, $pos),
+    after  => substr($content, $pos),
+    self   => \$self,
+  }, {});
   
   $file->content($content);
 }
@@ -80,7 +78,7 @@ sub builder_args
   {
     # TODO: can we get more meta on this?  What happens
     # if generic plugin attributes get added?
-    next if $accessor =~ /^(logger|zilla|plugin_name|ab_class)$/;
+    next if $accessor =~ /^(logger|zilla|plugin_name|ab_class|delim)$/;
     my $value = $self->$accessor;
     next unless defined $value;
     $args{$accessor} = $value;
@@ -106,30 +104,32 @@ sub _dump_as
   return $dumper->Dump;
 }
 
-sub _alien_builder_mm_args
+my $template;
+sub template
 {
-  my($self) = @_;
-  
-  (
-    "use lib 'inc';",
-    "use @{[ $self->ab_class ]};",
-    'my ' . $self->_dump_as($self->builder_args, '*AlienBuilderArgs'),
-    "my \$ab = @{[ $self->ab_class ]}->new(\%AlienBuilderArgs);",
-    '%WriteMakefileArgs = $ab->mm_args(%WriteMakefileArgs);',
-    'my %AlienBuildRequires = %{ (do { my %h = $ab->mm_args; \%h })->{BUILD_REQUIRES} };',
-    '$FallbackPrereqs{$_} = $AlienBuildRequires{$_} for keys %AlienBuildRequires;',
-    '$ab->save;',
-  )
-}
-
-sub _alien_builder_mm_postamble
-{
-  (
-   'sub MY::postamble {',
-   '  $ab->mm_postamble;',
-   '}',
-  );
+  $template = do { local $/; <DATA> } unless $template;
+  $template;
 }
 
 1;
 
+__DATA__
+{{ $before }}
+
+# begin inserted by {{ blessed $self }} {{ $self->VERSION || 'dev' }}
+{{ $self->ab_class ne 'Alien::Builder::MM' ? 'use lib "inc"' : '' }}
+my {{ $self->_dump_as($self->builder_args, '*AlienBuilderArgs') }}
+my $ab = {{ $self->ab_class }}->new(%AlienBuilderArgs);
+%WriteMakefileArgs = $ab->mm_args(%WriteMakefileArgs);
+my %AlienBuildRequires = %{ (do { my %h = $ab->mm_args; \%h })->{BUILD_REQUIRES} };
+$FallbackPrereqs{$_} = $AlienBuildRequires{$_} for keys %AlienBuildRequires;
+$ab->save;
+# end   inserted by {{ blessed $self }} {{ $self->VERSION || 'dev' }}
+
+{{ $after }}
+
+# begin inserted by {{ blessed $self }} {{ $self->VERSION || 'dev' }}
+sub MY::postamble {
+  $ab->mm_postamble;
+}
+# end   inserted by {{ blessed $self }} {{ $self->VERSION || 'dev' }}
