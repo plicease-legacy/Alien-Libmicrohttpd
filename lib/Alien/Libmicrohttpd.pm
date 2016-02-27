@@ -2,6 +2,8 @@ package Alien::Libmicrohttpd;
 
 use strict;
 use warnings;
+use File::Spec;
+use File::ShareDir ();
 use base qw( Alien::Base );
 
 # ABSTRACT: Alien package for libmicrohttpd
@@ -16,34 +18,46 @@ sub config
 
   my($class, $name) = @_;
 
-  unless($config)
+  if(my $alien_builder_data = $class->_alien_builder_data)
   {
-    require JSON::PP;
-    require File::Spec;
-    my $filename = File::Spec->catfile($class->dist_dir, 'alien_builder.json');
-    open my $fh, '<', $filename;
-    
-    $config = JSON::PP->new
-      ->filter_json_object(sub {
-        my($object) = @_;
-        my $class = delete $object->{'__CLASS__'};
-        return unless $class;
-        bless $object, $class;
-      })->decode(do { local $/; <$fh> });
-
-    close $fh;
+    return $alien_builder_data->{config}->{$name};
   }
-  
-  $config->{config}->{$name};
+
+  return $class->SUPER::config($name);
 }
 
-sub dist_dir
+sub Alien::Base::_alien_builder_data
 {
-  my($class) = @_;
-  require File::ShareDir;
-  my $dist = blessed $class || $class;
+  my($self) = @_;
+  
+  my $class = blessed $self || $self;
+  my $dist = $class;
   $dist =~ s/::/-/g;
-  File::ShareDir::dist_dir($dist);
+  my $dir = eval { File::ShareDir::dist_dir($dist) };
+  return unless defined $dir && -d $dir;
+  my $filename = File::Spec->catfile($dir, 'alien_builder.json');
+  return unless -r $filename;
+
+  require JSON::PP;
+  open my $fh, '<', $filename;    
+  $config = JSON::PP->new
+    ->filter_json_object(sub {
+      my($object) = @_;
+      my $class = delete $object->{'__CLASS__'};
+      return unless $class;
+      bless $object, $class;
+    })->decode(do { local $/; <$fh> });
+  close $fh;
+
+  # avoid re-reading on next call
+  if($class ne 'Alien::Base')
+  {
+    my $method = join '::', $class, '_alien_builder_data';
+    no strict 'refs';
+    *{$method} = sub { $config };
+  }
+
+  $config;
 }
 
 1;
