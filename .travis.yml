@@ -1,6 +1,11 @@
 language: perl
 sudo: false
 
+addons:
+  apt:
+    packages:
+      libmicrohttpd-dev
+
 install:
   - perlbrew list
   - sh corpus/install_alien_builder
