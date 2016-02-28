@@ -19,7 +19,7 @@ has $_ => ( is => 'ro', isa => 'Bool' )
   for qw( arch autoconf_with_pic dest_dir isolate_dynamic msys );
 
 has $_ => ( is => 'ro', isa => 'Str' )
-  for qw( name build_dir extractor ffi_name interpolator provides_cflags provides_libs retriever_class version_check );
+  for qw( name build_dir extractor ffi_name interpolator provides_cflags provides_libs version_check );
 
 has $_ => ( is => 'ro', isa => 'ArrayRef[Str]' )
   for qw( build_commands install_commands test_commands );
@@ -71,7 +71,8 @@ sub builder_args
 
   my %args = (
     dist_name => $self->zilla->name,
-    retriever => [ "http://ftp.gnu.org/gnu/libmicrohttpd/" => { pattern => '^libmicrohttpd-.*\.tar\.gz$' } ],
+    retriever_start => 'http://ftp.gnu.org/gnu/libmicrohttpd',
+    retriever_spec => [ { pattern => '^libmicrohttpd-.*\.tar\.gz$' } ],
   );
   
   foreach my $accessor (map { $_->name } __PACKAGE__->meta->get_all_attributes)
