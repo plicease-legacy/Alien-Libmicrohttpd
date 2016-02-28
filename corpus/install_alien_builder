@@ -12,3 +12,11 @@ cd /tmp/Alien-Builder
 (dzil authordeps --missing | cpanm -n ) || true
 
 dzil install --install-command 'cpanm -n .'
+
+rm -rf /tmp/Dist-Zilla-Plugin-AlienBuilder
+git clone --depth 2 https://github.com/plicease/Dist-Zilla-Plugin-AlienBuilder.git Dist-Zilla-Plugin-AlienBuilder
+
+cd /tmp/Dist-Zilla-Plugin-AlienBuilder
+dzil authordeps --missing | cpanm -n
+
+dzil install --install-command 'cpanm -n .'
